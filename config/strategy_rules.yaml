@@ -1,0 +1,94 @@
+# 3장 투자 유형별 EMA 세트, 5장 기울기/이격도 임계값, 11장 점수 가중치
+
+ema_sets:
+  단기: [10, 20, 60]
+  스윙: [20, 60, 120]
+  중장기: [60, 120, 200]
+  배당: [20, 60] # 주봉 기준
+
+default_purpose: 스윙
+
+slope:
+  lookback_days: 5
+  up_threshold: 0.003 # +0.3%
+  down_threshold: -0.003 # -0.3%
+
+disparity:
+  overheat_threshold: 0.10 # +10% 이상 과열
+  weak_threshold: -0.05 # -5% 조정 경고
+  broken_threshold: -0.10 # -10% 추세 훼손 가능성
+  danger_threshold: -0.15 # -15% 이하: 강한 하락일 수 있음(추가매수 금지 신호)
+
+rsi:
+  period: 14
+  healthy_low: 45
+  healthy_high: 70
+
+macd:
+  fast: 12
+  slow: 26
+  signal: 9
+
+atr:
+  period: 14
+
+bollinger:
+  period: 20
+  num_std: 2
+
+adx:
+  period: 14
+
+# 11장 점수 가중치 (원점수 합계 최대 85, 위험 최대 -35 -> 0~100 정규화)
+scoring:
+  trend:
+    price_above_ema20: 5
+    ema20_above_ema60: 7
+    ema60_above_ema120: 7
+    ema20_slope_up: 5
+    ema60_slope_up: 6
+    higher_highs_lows: 5
+  momentum:
+    return_20d_positive: 5
+    return_60d_positive: 5
+    rsi_healthy: 5
+    macd_hist_rising: 5
+  supply_demand:
+    volume_up_on_rally: 5
+    volume_down_on_decline: 4
+    relative_volume_up: 3
+    institutional_flow_positive: 3
+  market:
+    index_above_ema60: 5
+    index_ema60_slope_up: 4
+    sector_index_up: 3
+    market_volatility_stable: 3
+  risk_penalty:
+    ema_reverse_alignment: -8
+    recent_low_break: -6
+    atr_spike: -5
+    bearish_candle_with_volume: -5
+    earnings_disclosure_risk: -7
+    position_weight_exceeded: -4
+
+normalization:
+  max_positive_raw: 85
+  max_negative_raw: -35
+
+score_bands: # 정규화 점수(0~100) 구간
+  - min: 82
+    label: 추세 양호
+  - min: 59
+    label: 보유 또는 조정 대기
+  - min: 35
+    label: 신규·추가매수 주의
+  - min: 12
+    label: 일부 매도 검토
+  - min: 0
+    label: 강한 위험 경고
+
+# 13장 전략 앙상블
+ensemble:
+  agree_threshold: 3 # 4개 중 3개 이상 같은 방향이면 확정
+  high_confidence: 85
+  low_confidence: 35
