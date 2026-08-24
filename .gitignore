@@ -1,0 +1,17 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+**/__pycache__/
+
+# 실행 중 생성되는 캐시/상태/로그 - 전부 로컬에서 재생성됨 (시세 캐시, 판단 이력,
+# 뉴스 캐시, AI 의견 등 보유종목을 추론할 수 있는 파생 데이터 포함이라 통째로 제외)
+data/
+logs/
+
+# 개인 보유종목/계좌/현금 정보 - config/portfolio.example.yaml을 복사해서
+# 실제 값으로 채운 뒤 쓸 것 (커밋 금지)
+config/portfolio.yaml
+config/screening_universe.yaml
