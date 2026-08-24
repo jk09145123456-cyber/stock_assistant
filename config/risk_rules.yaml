@@ -1,0 +1,32 @@
+# 3장 투자 제한 + 12장/18장 위험 규칙
+max_position_weight: 0.12 # 종목 하나의 최대 비중
+max_sector_weight: 0.30 # 업종 하나의 최대 비중
+max_single_order_amount: 5000000 # 한 번에 투입할 최대 금액 (원)
+max_additional_buys: 2 # 추가매수 최대 횟수
+additional_buy_fraction: 0.25 # 1회 추가매수 = 최초 계획 금액의 25%
+risk_per_trade: 0.005 # 종목당 위험률 (7장 매수 수량 계산에 사용)
+minimum_cash_ratio: 0.20 # 전체 현금 최소 비율
+daily_loss_warning: -0.03 # 하루 최대 허용 손실 경고
+
+# 8장 익절
+take_profit_tiers:
+  - gain: 0.10
+    sell_fraction: 0.25
+  - gain: 0.20
+    sell_fraction: 0.25
+trailing_atr_multiple: 2.5 # 트레일링 스톱 = 최고가 - ATR * 배수
+
+# 중장기/배당(평생 보유) 종목의 손절 기준 - 사람이 숫자를 직접 안 박아도 매번 재계산됨.
+# "역대 전고점 대비 이 비율 이상 빠졌고 + 동시에 장기추세선(EMA200)도 이탈"했을 때만
+# 손절 신호로 본다. 두 조건을 같이 요구하는 이유: 낙폭만 보면 원래도 변동성 큰 종목은
+# 자주 걸리고, 이평선만 보면 평범한 조정에도 걸리기 때문 - 겹칠 때만 "역대급 위기" 취급.
+long_horizon_severe_drawdown: 0.50 # 전고점 대비 -50% 이상
+
+# 6장 급락 판정: 아래 6개 조건 중 몇 개 이상 충족 시 CRASH로 판정
+crash_conditions_required: 3
+crash_return_zscore: 2.5 # 일간 수익률이 평소 변동성의 몇 배 이상 하락했는지
+crash_atr_spike_ratio: 1.8 # 평소 ATR 대비 급증 배수
+crash_volume_spike_ratio: 2.0 # 평소 거래량 대비 급증 배수
+
+# 데이터 신선도 (분 단위) - 이 이상 오래되면 판단 중지
+max_data_staleness_minutes: 30
