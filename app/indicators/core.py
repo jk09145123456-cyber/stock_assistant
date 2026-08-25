@@ -122,6 +122,39 @@ def recent_high_break(df: pd.DataFrame, window: int = 20) -> bool:
     return bool(df["close"].iloc[-1] > prior_high)
 
 
+def oversold_recovery_stats(
+    close: pd.Series, rsi_series: pd.Series, recovery_level: pd.Series,
+    oversold_threshold: float = 35, max_wait_days: int = 60,
+) -> dict:
+    """13장 평균회귀 근거 통계: 이 종목이 과거에 RSI가 이 임계값 밑으로 떨어졌던 시점마다
+    실제로 recovery_level(보통 EMA중기선) 위로 회복하기까지 며칠 걸렸는지 전부 세어
+    평균/중앙값/표본수를 낸다. 미래를 예측하는 고정값이 아니라 이 종목 스스로가 과거에
+    보인 패턴을 매번 다시 요약한 값 - 종목마다 변동성이 달라서 회복 소요일도 다르게 나온다.
+    표본이 적으면(예: 3회 미만) 통계적으로 근거가 약하니 호출부에서 sample_count로 걸러야 한다.
+    """
+    is_oversold = rsi_series < oversold_threshold
+    streak_start = is_oversold & ~is_oversold.shift(1, fill_value=False)
+    start_positions = np.where(streak_start.to_numpy())[0]
+
+    durations: list[int] = []
+    for pos in start_positions:
+        for offset in range(1, max_wait_days + 1):
+            idx = pos + offset
+            if idx >= len(close):
+                break
+            if close.iloc[idx] >= recovery_level.iloc[idx]:
+                durations.append(offset)
+                break
+
+    if not durations:
+        return {"avg_days": None, "median_days": None, "sample_count": 0}
+    return {
+        "avg_days": float(np.mean(durations)),
+        "median_days": float(np.median(durations)),
+        "sample_count": len(durations),
+    }
+
+
 def volume_ratio(df: pd.DataFrame, window: int = 20) -> float:
     avg_vol = df["volume"].iloc[-window - 1 : -1].mean()
     if not avg_vol:

@@ -4,6 +4,8 @@
 """
 from __future__ import annotations
 
+from app.indicators.core import oversold_recovery_stats
+
 from .base import StrategyResult, Vote
 
 
@@ -28,8 +30,17 @@ def evaluate(bundle: dict, ema_periods: list[int], strategy_cfg: dict) -> Strate
     )
 
     if oversold:
+        target = float(bundle["ema"][mid].iloc[-1])
+        stats = oversold_recovery_stats(bundle["close"], bundle["rsi"], bundle["ema"][mid])
+        if stats["sample_count"] >= 3:
+            timing_note = (
+                f"과거 유사 과매도 {stats['sample_count']}회 중 평균 {stats['avg_days']:.0f}일"
+                f"(중앙값 {stats['median_days']:.0f}일) 만에 EMA{mid}({target:,.0f}) 회복"
+            )
+        else:
+            timing_note = f"중심선({target:,.0f}) 복귀 가능성 (과거 유사 사례 {stats['sample_count']}회뿐 - 소요일 추정 근거 부족)"
         return StrategyResult(
             "평균회귀", Vote.BUY,
-            ["장기 상승 추세 유지", "단기 과매도 (이격도/RSI/볼린저 하단)", "중심선 복귀 가능성"],
+            ["장기 상승 추세 유지", "단기 과매도 (이격도/RSI/볼린저 하단)", timing_note],
         )
     return StrategyResult("평균회귀", Vote.NEUTRAL, ["장기 상승이나 단기 과매도 상태 아님"])

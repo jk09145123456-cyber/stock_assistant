@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
+from app.indicators.core import oversold_recovery_stats
 from app.portfolio.models import Position
 from app.regime.classify import Regime, RegimeResult
 from app.risk.engine import PortfolioRiskCheck
@@ -112,7 +113,7 @@ def _build_counter_reasons(decision: Decision, bundle: dict, ensemble: EnsembleR
     rsi_val = bundle["rsi"].iloc[-1]
     if sell_like:
         if rsi_val < 35:
-            reasons.append(f"RSI {rsi_val:.0f} - 과매도 구간, 기술적 반등 가능성 있음")
+            reasons.append(_oversold_rebound_note(bundle, mid, rsi_val))
         if not bundle["recent_low_break_20d"]:
             reasons.append("최근 20일 신저가는 아직 갱신하지 않음 - 추가 하락이 확정된 건 아님")
         if bundle["volume_ratio_20d"] < 1.0:
@@ -125,6 +126,23 @@ def _build_counter_reasons(decision: Decision, bundle: dict, ensemble: EnsembleR
             reasons.append(f"EMA{short} 대비 이격도 +{disparity_short:.1f}% - 추격 매수 위험")
 
     return reasons
+
+
+def _oversold_rebound_note(bundle: dict, mid: int, rsi_val: float) -> str:
+    """RSI 과매도 상태일 때 "이 정도 빠졌으면 저점"이라는 감(느낌)이 아니라, 이 종목이
+    과거에 같은 상태에서 실제로 며칠 만에 EMA{mid}까지 되돌렸는지 직접 세어서 붙인다."""
+    stats = oversold_recovery_stats(bundle["close"], bundle["rsi"], bundle["ema"][mid])
+    target = float(bundle["ema"][mid].iloc[-1])
+    if stats["sample_count"] >= 3:
+        return (
+            f"RSI {rsi_val:.0f} - 과매도 구간, 과거 유사 상황 {stats['sample_count']}회 중"
+            f" 평균 {stats['avg_days']:.0f}일(중앙값 {stats['median_days']:.0f}일) 만에"
+            f" EMA{mid}({target:,.0f}) 회복"
+        )
+    return (
+        f"RSI {rsi_val:.0f} - 과매도 구간, 기술적 반등 가능성 있음"
+        f" (과거 유사 사례가 {stats['sample_count']}회뿐이라 회복 소요일 추정 근거는 부족)"
+    )
 
 
 _SEVERITY = {
