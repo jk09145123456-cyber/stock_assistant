@@ -1,0 +1,6 @@
+# 이 파일을 config/screening_universe.yaml로 복사한 뒤 분석할 종목을 입력한다.
+# config/screening_universe.yaml은 Git에 포함되지 않는다.
+market: KR
+tickers:
+  - { symbol: "000000", name: 예시종목1, sector: 예시업종 }
+  - { symbol: "000001", name: 예시종목2, sector: 예시업종 }
