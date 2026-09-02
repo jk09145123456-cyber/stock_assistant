@@ -517,3 +517,144 @@ def render_fundamentals(symbol: str, market: str) -> None:
     cols[2].metric("영업이익률", f"{fund.profit_margins:+.1%}" if fund.profit_margins is not None else "N/A")
     cols[3].metric("매출성장률", f"{fund.revenue_growth:+.1%}" if fund.revenue_growth is not None else "N/A")
 
+
+def render_ai_opinion(symbol: str, opinion: dict | None) -> None:
+    """AI 의견 요약 자체는 render_verdict_card에서 이미 보여주므로, 여기서는
+    그 의견이 근거로 삼은 뉴스 출처만 추가로 보여준다(중복 방지)."""
+    sym_op = get_symbol_opinion(opinion, symbol)
+    news_refs = sym_op.get("news_refs") if sym_op else None
+    if not news_refs:
+        return
+    with st.expander("AI 의견이 참고한 뉴스 출처"):
+        for ref in news_refs:
+            st.caption(f"- {ref}")
+
+
+def render_news(name: str) -> None:
+    st.markdown(f"**{name} 관련 최근 뉴스** (구글 뉴스, 자동 수집 - 해석·요약은 아님)")
+    try:
+        items = get_recent_news(f"{name} 주가", max_items=5)
+    except Exception as e:
+        st.caption(f"뉴스를 불러오지 못했습니다: {e}")
+        return
+    if not items:
+        st.caption("관련 뉴스를 찾지 못했습니다.")
+        return
+    for item in items:
+        date_str = item.published.strftime("%m/%d") if item.published else ""
+        st.markdown(f"- [{item.title}]({item.link}) · {item.source} {date_str}")
+
+
+def render_scenario(o) -> None:
+    levels = o.decision.key_levels
+    if not levels or not o.current_price:
+        return
+    st.markdown("**🎯 가격 시나리오** (얼마면 어떻게 되는지)")
+    rows = []
+    for label, price in levels.items():
+        if label == "현재가":
+            continue
+        pct = (price / o.current_price - 1) * 100
+        direction = "위" if price >= o.current_price else "아래"
+        rows.append({
+            "기준": label,
+            "가격": f"{price:,.0f}",
+            "현재가 대비": f"{pct:+.1f}% ({direction})",
+        })
+    if rows:
+        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+
+
+def render_journal(outcome_by_symbol: dict) -> None:
+    st.subheader("📝 행동 기록")
+    st.caption("시스템 판단과 실제로 취한 행동이 다를 수 있습니다. 기록해두면 나중에 어떤 신호가 유효했는지 분석할 수 있습니다.")
+
+    with st.form("journal_form", clear_on_submit=True):
+        symbols = list(outcome_by_symbol.keys())
+        symbol = st.selectbox("종목", options=symbols) if symbols else None
+        user_action = st.selectbox("실제 행동", ["보유", "일부 매도", "전량 매도", "추가매수", "신규매수", "관망"])
+        note = st.text_input("메모 (선택)")
+        submitted = st.form_submit_button("기록 추가")
+        if submitted and symbol:
+            o = outcome_by_symbol[symbol]
+            append_entry(symbol, symbol, o.decision.decision.value, user_action, note, o.current_price)
+            st.success("기록되었습니다.")
+
+    entries = load_entries()
+    if entries:
+        st.dataframe(pd.DataFrame(entries), width="stretch", hide_index=True)
+    else:
+        st.caption("아직 기록된 행동이 없습니다.")
+
+
+def render_final_summary(portfolio, outcome_by_symbol: dict, opinion: dict | None) -> None:
+    st.subheader("🧭 종합 의견 및 실행 시나리오")
+    st.caption("이건 확정된 답이 아니라 참고용 의견입니다. 실제 매매는 본인이 최종 판단하세요.")
+
+    if not opinion:
+        st.caption("아직 작성된 AI 의견이 없습니다. 새로고침 버튼을 눌러 생성하세요.")
+        return
+
+    st.markdown(opinion.get("final_summary", "").strip())
+
+    st.markdown("**💊 지금 당장 실행한다면 (구체적 수량)**")
+    action_rows = []
+    total_cash_freed = 0.0
+    for p in portfolio.positions:
+        o = outcome_by_symbol.get(p.symbol)
+        if not o or not o.current_price:
+            continue
+        fraction = o.decision.sell_fraction
+        if o.decision.decision in (Decision.PARTIAL_SELL_REVIEW, Decision.FULL_SELL_REVIEW) and (
+            fraction or o.decision.decision == Decision.FULL_SELL_REVIEW
+        ):
+            frac = fraction if fraction else 1.0
+            shares = max(1, round(p.quantity * frac)) if frac < 1.0 else p.quantity
+            proceeds = shares * o.current_price
+            total_cash_freed += proceeds
+            action_rows.append({
+                "종목": f"{p.name}({p.symbol})",
+                "행동": f"{shares}주 매도 (보유 {p.quantity}주 중 {frac:.0%})",
+                "예상 현금화": f"{proceeds:,.0f}원",
+            })
+    if action_rows:
+        st.dataframe(pd.DataFrame(action_rows), width="stretch", hide_index=True)
+        st.info(
+            f"위 매도를 다 실행하면 총 {total_cash_freed:,.0f}원이 현금화됩니다. "
+            "근데 지금 이 돈으로 '이걸 대신 사라'고 확신 있게 추천할 신규 종목은 없어요 "
+            "(아래 참고 후보는 있지만 확신도가 높지 않습니다) - 일단 현금 비율을 회복하는 것 자체가 목적입니다."
+        )
+    else:
+        st.caption("지금 기준으로는 구체적 매도 실행 대상이 없습니다.")
+
+    rows = []
+    for p in portfolio.positions:
+        o = outcome_by_symbol.get(p.symbol)
+        if not o:
+            continue
+        sym_op = get_symbol_opinion(opinion, p.symbol)
+        levels = o.decision.key_levels
+        target = next((v for k, v in levels.items() if "목표가" in k or "추세반전" in k), None)
+        stop = next((v for k, v in levels.items() if "손절" in k), None)
+        rows.append({
+            "종목": f"{p.name}({p.symbol})",
+            "판단": o.decision.decision.value,
+            "AI 전망": sym_op["outlook"] if sym_op else "-",
+            "목표가": f"{target:,.0f}" if target else "-",
+            "손절가": f"{stop:,.0f}" if stop else "-",
+        })
+    if rows:
+        st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
+
+    candidates = (opinion.get("candidates") or {})
+    if candidates:
+        st.markdown("**🆕 참고 후보** (신규 매수용 - 현금 여력 생긴 뒤)")
+        crows = [
+            {"종목코드": sym, "전망": c["outlook"], "요약": c["summary"].strip()}
+            for sym, c in candidates.items()
+        ]
+        st.dataframe(pd.DataFrame(crows), width="stretch", hide_index=True)
+
+
+if __name__ == "__main__":
+    main()
