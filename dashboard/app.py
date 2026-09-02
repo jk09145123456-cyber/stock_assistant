@@ -24,7 +24,7 @@ from app.opinion import get_symbol_opinion, load_opinion
 from app.pipeline import analyze_portfolio
 from app.portfolio.models import load_portfolio
 
-st.set_page_config(page_title="주식 보조 시스템", page_icon="📊", layout="wide")
+st.set_page_config(page_title="주식 보조 시스템", layout="wide")
 
 st.markdown(
     """
@@ -48,8 +48,8 @@ def _run_analysis(_settings):
 
 
 def main() -> None:
-    st.title("📊 보유·관심 종목 분석 대시보드")
-    st.caption("🔒 이 화면은 매수/매도를 실행하지 않습니다. 실제 주문은 증권사 앱에서 직접 하세요.")
+    st.title("보유·관심 종목 분석 대시보드")
+    st.caption("이 화면은 매수/매도를 실행하지 않습니다. 실제 주문은 증권사 앱에서 직접 하세요.")
 
     settings = get_settings()
     portfolio = load_portfolio(settings.portfolio)
@@ -123,7 +123,7 @@ def refresh_ai_opinion(portfolio, outcome_by_symbol: dict) -> None:
 
 
 def render_summary(portfolio, outcomes) -> None:
-    st.subheader("🗓️ 오늘의 요약")
+    st.subheader("오늘의 요약")
 
     price_lookup = {o.symbol: o.current_price for o in outcomes if o.current_price}
     total_position_value = portfolio.total_position_value(price_lookup)
@@ -144,12 +144,12 @@ def render_summary(portfolio, outcomes) -> None:
 
     with st.container(border=True):
         cols = st.columns(6)
-        cols[0].metric("💰 보유 평가액", f"{total_position_value:,.0f}")
-        cols[1].metric("📈 보유 손익률", f"{total_pnl_pct:+.1f}%")
-        cols[2].metric("💵 현금 비중", f"{cash_ratio:.1%}")
-        cols[3].metric("🚨 위험 경고", f"{warn_count}건")
-        cols[4].metric("🟢 추가매수 후보", f"{add_buy_candidates}건")
-        cols[5].metric("🎯 익절 검토", f"{take_profit_candidates}건")
+        cols[0].metric("보유 평가액", f"{total_position_value:,.0f}")
+        cols[1].metric("보유 손익률", f"{total_pnl_pct:+.1f}%")
+        cols[2].metric("현금 비중", f"{cash_ratio:.1%}")
+        cols[3].metric("위험 경고", f"{warn_count}건")
+        cols[4].metric("추가매수 후보", f"{add_buy_candidates}건")
+        cols[5].metric("익절 검토", f"{take_profit_candidates}건")
         st.caption(f"총자산(현금+평가액) 기준: {total_assets:,.0f} {portfolio.account_currency}")
 
 
@@ -202,7 +202,7 @@ def _addbuy_badge(o) -> str:
 
 
 def render_position_table(portfolio, outcome_by_symbol: dict, opinion: dict | None) -> None:
-    st.subheader("📋 종목 목록")
+    st.subheader("종목 목록")
     all_rows = [(p, False) for p in portfolio.positions] + [(w, True) for w in portfolio.watchlist]
     if not all_rows:
         st.info("표시할 종목이 없습니다. config/portfolio.yaml을 확인하세요.")
@@ -262,11 +262,11 @@ def render_position_table(portfolio, outcome_by_symbol: dict, opinion: dict | No
 
     st.caption("**판단(시스템)** = 규칙 기반 기계적 신호 · **AI 의견** = 뉴스·재무까지 종합한 참고 의견 · **추가매수** = 지금 추가매수 검토 조건을 충족하는지")
     if opinion:
-        st.caption(f"🕐 AI 의견 마지막 작성: {opinion.get('generated_at', '?')}")
+        st.caption(f"AI 의견 마지막 작성: {opinion.get('generated_at', '?')}")
 
 
 def render_detail(portfolio, outcome_by_symbol: dict, opinion: dict | None, settings) -> None:
-    st.subheader("🔍 종목 상세")
+    st.subheader("종목 상세")
     all_items = [(p.symbol, f"{p.name}({p.symbol})", p.market, p.purpose) for p in portfolio.positions] + \
                 [(w.symbol, f"{w.name}({w.symbol}) [관심]", w.market, w.purpose) for w in portfolio.watchlist]
     if not all_items:
@@ -328,18 +328,18 @@ def render_action_thresholds(o, position=None, risk_cfg=None) -> None:
         take_profit_price = position.avg_price * (1 + first_tier["gain"])
         take_profit_fraction = first_tier["sell_fraction"]
 
-    st.markdown("##### 🚦 매매 기준선 (한눈에 보기)")
+    st.markdown("##### 매매 기준선 (한눈에 보기)")
     cols = st.columns(4 if take_profit_price else 3)
     tc1, tc2, tc3 = cols[0], cols[1], cols[2]
     with tc1:
         if stop_price:
             pct = (stop_price / o.current_price - 1) * 100
             if stop_is_fixed:
-                stop_caption = "🔴 이 밑이면 즉시 손절 (직접 설정)"
+                stop_caption = "이 밑이면 즉시 손절 (직접 설정)"
             elif stop_is_dynamic:
-                stop_caption = "🔴 이 밑이면 즉시 손절 (자동계산·매번 갱신)"
+                stop_caption = "이 밑이면 즉시 손절 (자동계산·매번 갱신)"
             else:
-                stop_caption = "🔴 이 밑으로 가면 매도 강도↑ (참고)"
+                stop_caption = "이 밑으로 가면 매도 강도↑ (참고)"
             st.markdown(
                 f"<div style='background:rgba(231,76,60,0.10);border-radius:10px;padding:10px 14px;height:100%;'>"
                 f"<span style='color:#e74c3c;font-weight:600;'>{stop_caption}</span><br>"
@@ -352,7 +352,7 @@ def render_action_thresholds(o, position=None, risk_cfg=None) -> None:
     with tc2:
         if recover_price:
             pct = (recover_price / o.current_price - 1) * 100
-            recover_caption = "🟢 이 위면 목표가 도달 (직접 설정)" if target_is_fixed else "🟢 이 위로 회복하면 추세 반전 신호 (참고)"
+            recover_caption = "이 위면 목표가 도달 (직접 설정)" if target_is_fixed else "이 위로 회복하면 추세 반전 신호 (참고)"
             st.markdown(
                 f"<div style='background:rgba(39,174,96,0.10);border-radius:10px;padding:10px 14px;height:100%;'>"
                 f"<span style='color:#27ae60;font-weight:600;'>{recover_caption}</span><br>"
@@ -369,7 +369,7 @@ def render_action_thresholds(o, position=None, risk_cfg=None) -> None:
             pct = (take_profit_price / o.current_price - 1) * 100
             st.markdown(
                 f"<div style='background:rgba(41,128,185,0.10);border-radius:10px;padding:10px 14px;height:100%;'>"
-                f"<span style='color:#2980b9;font-weight:600;'>🎯 이 위로 오르면 익절 검토({take_profit_fraction:.0%})</span><br>"
+                f"<span style='color:#2980b9;font-weight:600;'>이 위로 오르면 익절 검토({take_profit_fraction:.0%})</span><br>"
                 f"<span style='font-size:1.6rem;font-weight:700;'>{take_profit_price:,.0f}</span>"
                 f"<span style='opacity:0.6;'> ({pct:+.1f}%)</span></div>",
                 unsafe_allow_html=True,
@@ -381,7 +381,7 @@ def render_action_thresholds(o, position=None, risk_cfg=None) -> None:
         notes.append("'(자동계산)'은 전고점 대비 낙폭 기준으로 매번 다시 계산됩니다 - 전고점이 갱신되면 이 값도 같이 움직입니다.")
     if not notes:
         notes.append("이 값들은 매일 조금씩 바뀌는 근사치(이평선/최근저점 재계산)입니다. 절대적인 확정선이 아닙니다.")
-    st.caption("⚠️ " + " ".join(notes))
+    st.caption(" ".join(notes))
 
 
 def render_addbuy_box(o) -> None:
@@ -389,7 +389,7 @@ def render_addbuy_box(o) -> None:
     if o.decision.decision == Decision.ADD_BUY_REVIEW:
         st.markdown(
             "<div style='background:rgba(39,174,96,0.10);border-radius:10px;padding:10px 14px;height:100%;'>"
-            "<span style='color:#27ae60;font-weight:600;'>🔵 추가매수 조건 충족</span><br>"
+            "<span style='color:#27ae60;font-weight:600;'>추가매수 조건 충족</span><br>"
             "<span style='font-size:1.1rem;font-weight:700;'>지금 검토 가능</span></div>",
             unsafe_allow_html=True,
         )
@@ -401,7 +401,7 @@ def render_addbuy_box(o) -> None:
     reason_txt = blocked_reason or "전략 신호(매수 합의) 미충족"
     st.markdown(
         f"<div style='background:rgba(127,140,141,0.10);border-radius:10px;padding:10px 14px;height:100%;'>"
-        f"<span style='color:#7f8c8d;font-weight:600;'>🔵 추가매수 지금 불가</span><br>"
+        f"<span style='color:#7f8c8d;font-weight:600;'>추가매수 지금 불가</span><br>"
         f"<span style='font-size:0.95rem;'>{reason_txt}</span></div>",
         unsafe_allow_html=True,
     )
@@ -441,17 +441,17 @@ def render_verdict_card(label: str, symbol: str, o, opinion: dict | None, positi
         if o.decision.sell_fraction:
             st.info(f"권장 매도 비중: {o.decision.sell_fraction:.0%}")
         if o.alert:
-            st.warning(f"⚠️ 상태 변경: {o.alert.splitlines()[2] if len(o.alert.splitlines()) > 2 else ''}")
+            st.warning(f"상태 변경: {o.alert.splitlines()[2] if len(o.alert.splitlines()) > 2 else ''}")
         if not o.data_ok:
             st.error("데이터 품질 경고:\n" + "\n".join(o.data_reasons))
 
         rc1, rc2 = st.columns(2)
         with rc1:
-            st.markdown("**🔻 근거 (시스템)**")
+            st.markdown("**근거 (시스템)**")
             for r in o.decision.reasons:
                 st.markdown(f"- {r}")
         with rc2:
-            st.markdown("**⚖️ 반대 근거**")
+            st.markdown("**반대 근거**")
             if o.decision.counter_reasons:
                 for r in o.decision.counter_reasons:
                     st.markdown(f"- {r}")
@@ -459,7 +459,7 @@ def render_verdict_card(label: str, symbol: str, o, opinion: dict | None, positi
                 st.caption("해당 없음")
 
         if o.decision.release_conditions:
-            st.markdown("**🔓 해제 조건**")
+            st.markdown("**해제 조건**")
             for r in o.decision.release_conditions:
                 st.markdown(f"- {r}")
 
@@ -510,7 +510,7 @@ def render_fundamentals(symbol: str, market: str) -> None:
         fund = None
     if not fund:
         return
-    st.markdown("**💼 재무 지표** (참고용 - 국내 종목은 뉴스와 다를 수 있음)")
+    st.markdown("**재무 지표** (참고용 - 국내 종목은 뉴스와 다를 수 있음)")
     cols = st.columns(4)
     cols[0].metric("Forward PER", f"{fund.forward_pe:.1f}" if fund.forward_pe else "N/A")
     cols[1].metric("ROE", f"{fund.return_on_equity:+.1%}" if fund.return_on_equity is not None else "N/A")
@@ -549,7 +549,7 @@ def render_scenario(o) -> None:
     levels = o.decision.key_levels
     if not levels or not o.current_price:
         return
-    st.markdown("**🎯 가격 시나리오** (얼마면 어떻게 되는지)")
+    st.markdown("**가격 시나리오** (얼마면 어떻게 되는지)")
     rows = []
     for label, price in levels.items():
         if label == "현재가":
@@ -566,7 +566,7 @@ def render_scenario(o) -> None:
 
 
 def render_journal(outcome_by_symbol: dict) -> None:
-    st.subheader("📝 행동 기록")
+    st.subheader("행동 기록")
     st.caption("시스템 판단과 실제로 취한 행동이 다를 수 있습니다. 기록해두면 나중에 어떤 신호가 유효했는지 분석할 수 있습니다.")
 
     with st.form("journal_form", clear_on_submit=True):
@@ -588,7 +588,7 @@ def render_journal(outcome_by_symbol: dict) -> None:
 
 
 def render_final_summary(portfolio, outcome_by_symbol: dict, opinion: dict | None) -> None:
-    st.subheader("🧭 종합 의견 및 실행 시나리오")
+    st.subheader("종합 의견 및 실행 시나리오")
     st.caption("이건 확정된 답이 아니라 참고용 의견입니다. 실제 매매는 본인이 최종 판단하세요.")
 
     if not opinion:
@@ -597,7 +597,7 @@ def render_final_summary(portfolio, outcome_by_symbol: dict, opinion: dict | Non
 
     st.markdown(opinion.get("final_summary", "").strip())
 
-    st.markdown("**💊 지금 당장 실행한다면 (구체적 수량)**")
+    st.markdown("**지금 당장 실행한다면 (구체적 수량)**")
     action_rows = []
     total_cash_freed = 0.0
     for p in portfolio.positions:
@@ -648,7 +648,7 @@ def render_final_summary(portfolio, outcome_by_symbol: dict, opinion: dict | Non
 
     candidates = (opinion.get("candidates") or {})
     if candidates:
-        st.markdown("**🆕 참고 후보** (신규 매수용 - 현금 여력 생긴 뒤)")
+        st.markdown("**참고 후보** (신규 매수용 - 현금 여력 생긴 뒤)")
         crows = [
             {"종목코드": sym, "전망": c["outlook"], "요약": c["summary"].strip()}
             for sym, c in candidates.items()
