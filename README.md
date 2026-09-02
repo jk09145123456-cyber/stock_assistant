@@ -70,6 +70,12 @@ run_backtest.py           # CLI 진입점 (백테스트)
 - **Streamlit** – 대시보드
 - **scikit-learn** – 14장 2단계(로지스틱 회귀 하락위험 모델) 확장 시 사용 예정 (아직 미구현)
 
+## 참고 자료
+
+- **TradingAgents** (Tauric Research) – 멀티에이전트 LLM 트레이딩 프레임워크. 앙상블 반대표/반대 신호를 모아 보여주는 "반대 근거" 설계(`app/decision/engine.py`의 `_build_counter_reasons`)가 이 논문의 "강세/약세를 일부러 반박시킨다"는 아이디어를 LLM 토론 없이 결정론적 규칙으로 흉내낸 것. (정확한 논문 링크는 직접 검색해서 채워넣을 것)
+- **Larry Connors의 단기 평균회귀 연구** (*Short-Term Trading Strategies That Work*, Connors & Alvarez) – RSI 과매도 이후 단기 반등 패턴. `app/indicators/core.py`의 `oversold_recovery_stats`가 이 패턴을 종목별 과거 데이터에서 직접 재계산하는 식으로 구현.
+- **손익비(R-multiple) 리스크 관리 원칙** – "위험 1당 보상 N을 노린다"는 일반적인 트레이딩 리스크관리 개념(예: Van Tharp류). 익절/손절 사이징 설계에 참고.
+
 ## 현재 구현 범위 (기획서 19장 로드맵 기준)
 
 - ✅ 1단계 핵심 시스템: 보유 종목 입력, 시세 수집·검증, 지표, 시장 국면, 종목별 점수/판단, 설명
