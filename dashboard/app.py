@@ -153,16 +153,6 @@ def render_summary(portfolio, outcomes) -> None:
         st.caption(f"총자산(현금+평가액) 기준: {total_assets:,.0f} {portfolio.account_currency}")
 
 
-DECISION_COLOR = {
-    Decision.HALTED: "⚪",
-    Decision.WATCH: "🔵",
-    Decision.HOLD: "🟢",
-    Decision.PARTIAL_SELL_REVIEW: "🟠",
-    Decision.FULL_SELL_REVIEW: "🔴",
-    Decision.ADD_BUY_REVIEW: "🟢",
-    Decision.ADD_BUY_FORBIDDEN: "🟠",
-}
-
 # 배지 배경/글자색 - 라이트/다크 테마 둘 다에서 읽히도록 반투명 배경 + 진한 글자색 사용
 BADGE_HEX = {
     "red": ("#e74c3c", "rgba(231,76,60,0.15)"),
